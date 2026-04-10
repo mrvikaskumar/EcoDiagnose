@@ -1,0 +1,13 @@
+# Backend Secrets & Dependencies
+backend/.env
+backend/node_modules/
+
+# Frontend Dependencies & Build Files
+frontend/node_modules/
+frontend/dist/
+
+# AI Service Virtual Env & Leftover Training Data
+Ai-Service/env/
+Ai-Service/runs/
+Ai-Service/yolo_dataset/
+Ai-Service/__pycache__/
