@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 640" width="512" height="640">
+  <circle cx="256" cy="256" r="230" fill="#E6F2EA"/>
+  <path d="M140 160 Q 180 120, 220 160 T 260 160 Q 280 180, 260 200 T 220 200 Z" fill="#D3E8DA" opacity="0.6"/>
+  <path d="M300 220 Q 340 180, 380 220 T 420 220 Q 440 240, 420 260 T 380 260 Z" fill="#D3E8DA" opacity="0.6"/>
+
+  <g transform="translate(190, 100)">
+    <rect x="0" y="20" width="140" height="90" rx="5" fill="#3D3D3D"/>
+    <rect x="20" y="0" width="160" height="40" rx="3" fill="#333333"/>
+    <rect x="30" y="10" width="140" height="20" rx="1" fill="#4D4D4D"/>
+  </g>
+
+  <path d="M176 186 L 156 500 Q 156 520, 176 520 L 336 520 Q 356 520, 336 500 L 336 186 Z" fill="#3A833A"/>
+  <rect x="156" y="186" width="200" height="30" rx="3" fill="#3A833A"/> <g transform="translate(320, 190)">
+    <path d="M 0 0 C 10 30, 0 60, -10 90" stroke="#333" stroke-width="2" fill="none"/>
+    <rect x="-15" y="90" width="30" height="50" rx="10" fill="#222"/>
+  </g>
+  
+  <text x="256" y="470" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold" font-size="28px" fill="#FFFFFF">ELECTRONIC</text>
+
+  <g transform="translate(210, 270) scale(0.6)">
+    <path fill="#FFFFFF" d="M100.8,0l51.1,88.4H0L100.8,0z M100.8,40L42.5,140.8H159L100.8,40z M44.6,128.5l22.4,12.9L33.3,163l-22.4-12.9
+    L44.6,128.5z M69,142.8l22.4,12.9l-22.4,12.9L46.6,155.7L69,142.8z M93.4,156.8l22.4,12.9l-22.4,12.9l-22.4-12.9L93.4,156.8z M117.8,171.1
+    l22.4,12.9l-22.4,12.9l-22.4-12.9L117.8,171.1z M142.2,185.2l22.4,12.9l-22.4,12.9l-22.4-12.9L142.2,185.2z M166.7,199.3l22.4,12.9
+    l-22.4,12.9l-22.4-12.9L166.7,199.3z"/>
+  </g>
+
+  <path d="M150 480 Q 120 500, 150 520 Q 180 500, 150 480 Z" fill="#CDE7D5" opacity="0.8"/>
+  <path d="M362 480 Q 392 500, 362 520 Q 332 500, 362 480 Z" fill="#CDE7D5" opacity="0.8"/>
+
+  <text x="256" y="600" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold" font-size="34px" fill="#4D4D4D">E-WASTE MANAGEMENT</text>
+</svg>
