@@ -33,17 +33,17 @@ const PartnerDashboard = () => {
 
         try {
             // 1. Fetch Profile
-            const partnerRes = await fetch(`http://localhost:5001/api/partner/${partnerId}`);
+            const partnerRes = await fetch(`https://ecodiagnose-backend.onrender.com/api/partner/${partnerId}`);
             const partnerData = await partnerRes.json();
             setPartnerProfile(partnerData);
             setEditFormData(partnerData);
 
             // 2. Fetch Pending Requests
-            const requestsRes = await fetch('http://localhost:5001/api/requests');
+            const requestsRes = await fetch('https://ecodiagnose-backend.onrender.com/api/requests');
             const requestsData = await requestsRes.json();
 
             // 3. Fetch Partner's History
-            const historyRes = await fetch(`http://localhost:5001/api/partner/${partnerId}/history`);
+            const historyRes = await fetch(`https://ecodiagnose-backend.onrender.com/api/partner/${partnerId}/history`);
             const historyData = await historyRes.json();
 
             if (requestsRes.ok && partnerRes.ok && historyRes.ok) {
@@ -84,7 +84,7 @@ const PartnerDashboard = () => {
 
         try {
             const partnerId = localStorage.getItem('partnerToken');
-            const response = await fetch(`http://localhost:5001/api/requests/${requestId}/claim`, {
+            const response = await fetch(`https://ecodiagnose-backend.onrender.com/api/requests/${requestId}/claim`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ partnerId })
@@ -126,7 +126,7 @@ const PartnerDashboard = () => {
 
     const saveProfile = async () => {
         try {
-            const response = await fetch(`http://localhost:5001/api/partner/${partnerProfile._id}`, {
+            const response = await fetch(`https://ecodiagnose-backend.onrender.com/api/partner/${partnerProfile._id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(editFormData)

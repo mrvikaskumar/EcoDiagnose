@@ -23,9 +23,9 @@ const AdminDashboard = () => {
     const fetchAdminData = async () => {
         try {
             const [reqRes, partRes, feedRes] = await Promise.all([
-                fetch('http://localhost:5001/api/admin/requests'),
-                fetch('http://localhost:5001/api/admin/partners'),
-                fetch('http://localhost:5001/api/admin/feedback')
+                fetch('https://ecodiagnose-backend.onrender.com/api/admin/requests'),
+                fetch('https://ecodiagnose-backend.onrender.com/api/admin/partners'),
+                fetch('https://ecodiagnose-backend.onrender.com/api/admin/feedback')
             ]);
 
             if (reqRes.ok && partRes.ok && feedRes.ok) {
@@ -78,7 +78,7 @@ const AdminDashboard = () => {
     const handleSendWarning = async () => {
         setIsSendingWarning(true);
         try {
-            const response = await fetch(`http://localhost:5001/api/admin/partners/${warningModal.partner._id}/warn`, {
+            const response = await fetch(`https://ecodiagnose-backend.onrender.com/api/admin/partners/${warningModal.partner._id}/warn`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ customMessage: warningModal.message })
@@ -107,7 +107,7 @@ const AdminDashboard = () => {
         if (!window.confirm(`Are you sure you want to ${action} this partner?`)) return;
 
         try {
-            const response = await fetch(`http://localhost:5001/api/admin/partners/${partnerId}/block`, {
+            const response = await fetch(`https://ecodiagnose-backend.onrender.com/api/admin/partners/${partnerId}/block`, {
                 method: 'PATCH'
             });
             if (response.ok) {
@@ -125,7 +125,7 @@ const AdminDashboard = () => {
         if (!window.confirm("⚠️ DANGER: Are you sure you want to PERMANENTLY DELETE this partner? This cannot be undone.")) return;
 
         try {
-            const response = await fetch(`http://localhost:5001/api/admin/partners/${partnerId}`, {
+            const response = await fetch(`https://ecodiagnose-backend.onrender.com/api/admin/partners/${partnerId}`, {
                 method: 'DELETE'
             });
             if (response.ok) {
@@ -143,7 +143,7 @@ const AdminDashboard = () => {
         if (!window.confirm("Are you sure you want to delete this feedback/complaint?")) return;
 
         try {
-            const response = await fetch(`http://localhost:5001/api/admin/feedback/${feedbackId}`, {
+            const response = await fetch(`https://ecodiagnose-backend.onrender.com/api/admin/feedback/${feedbackId}`, {
                 method: 'DELETE'
             });
             if (response.ok) {

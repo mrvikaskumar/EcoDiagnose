@@ -38,7 +38,7 @@ const PartnerOTPVerify = () => {
         }
 
         try {
-            const response = await fetch('http://localhost:5001/api/partner/verify-otp', {
+            const response = await fetch('https://ecodiagnose-backend.onrender.com/api/partner/verify-otp', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, otp: finalOtp })

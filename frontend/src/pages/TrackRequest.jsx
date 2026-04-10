@@ -17,7 +17,7 @@ const TrackRequest = () => {
         setRequestData(null);
 
         try {
-            const response = await fetch(`http://localhost:5001/api/requests/track/${trackerId}`);
+            const response = await fetch(`https://ecodiagnose-backend.onrender.com/api/requests/track/${trackerId}`);
             const data = await response.json();
 
             if (response.ok) {

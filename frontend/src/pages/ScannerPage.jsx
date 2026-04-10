@@ -94,7 +94,7 @@ const ScannerPage = () => {
         formData.append('image', selectedFile);
 
         try {
-            const response = await fetch('http://localhost:5001/api/analyze', {
+            const response = await fetch('https://ecodiagnose-backend.onrender.com/api/analyze', {
                 method: 'POST',
                 body: formData,
             });

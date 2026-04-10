@@ -63,7 +63,7 @@ const PartnerRegistration = () => {
         }
 
         try {
-            const response = await fetch('http://localhost:5001/api/partner/register', {
+            const response = await fetch('https://ecodiagnose-backend.onrender.com/api/partner/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData)
