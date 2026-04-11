@@ -231,16 +231,41 @@ app.put('/api/partner/:id', async (req, res) => {
     }
 });
 
-// --- EMAIL TRANSPORTER SETUP (UPDATED FOR RENDER) ---
-const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-    },
-});
+// --- EMAIL API SETUP (Bypassing Render SMTP Block) ---
+// We created a custom "transporter" that uses Brevo's HTTP API instead of Nodemailer.
+// This allows all your existing .sendMail() functions to work perfectly without changing them!
+const transporter = {
+    sendMail: async (mailOptions) => {
+        try {
+            const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+                method: 'POST',
+                headers: {
+                    'accept': 'application/json',
+                    'api-key': process.env.BREVO_API_KEY, // Your new API key
+                    'content-type': 'application/json'
+                },
+                body: JSON.stringify({
+                    sender: { name: "EcoDiagnose System", email: process.env.EMAIL_USER },
+                    to: [{ email: mailOptions.to }],
+                    subject: mailOptions.subject,
+                    htmlContent: mailOptions.html
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error("❌ Brevo API Error Details:", errorData);
+                throw new Error("Failed to send email via API");
+            }
+
+            console.log(`✅ API Email successfully sent to ${mailOptions.to}`);
+            return await response.json();
+        } catch (error) {
+            console.error("❌ Critical Email Error:", error);
+            throw error;
+        }
+    }
+};
 
 transporter.verify((error, success) => {
     if (error) console.error("❌ Email setup error:", error);
