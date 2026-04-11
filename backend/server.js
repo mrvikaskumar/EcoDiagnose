@@ -308,8 +308,34 @@ app.post('/api/requests', async (req, res) => {
 
 app.get('/api/requests', async (req, res) => {
     try {
+        // 1. Fetch all pending requests from MongoDB (The real, raw data)
         const requests = await Request.find({ status: 'Pending' }).sort({ createdAt: -1 });
-        res.status(200).json(requests);
+
+        // 2. The "Masking" Loop: Modify data ONLY for the response. Database stays untouched!
+        const safeRequests = requests.map(item => {
+            const doc = item.toObject(); // Convert Mongoose document to plain JS object
+
+            // A. Mask the contact details (Prevents React from breaking or showing 'undefined')
+            doc.userEmail = "🔒 Hidden until claimed";
+            doc.mobile = "🔒 Hidden";
+
+            // B. Clean up the address. Show only City, State, and Pincode if they exist in your DB.
+            if (doc.city && doc.state) {
+                doc.address = `${doc.city}, ${doc.state} - ${doc.pincode || ''}`;
+            } else {
+                // Fallback for your older requests that might just have one giant address string
+                doc.address = "🔒 Full address hidden until claimed";
+            }
+
+            // C. Clear any extra notes where users might have accidentally typed their phone numbers
+            doc.note = "";
+
+            // Notice we leave doc.userName completely untouched!
+            return doc;
+        });
+
+        // 3. Send the masked data to the frontend
+        res.status(200).json(safeRequests);
     } catch (error) {
         console.error("Error fetching requests:", error);
         res.status(500).json({ error: "Failed to fetch requests" });
