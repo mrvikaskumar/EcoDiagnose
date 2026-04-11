@@ -313,22 +313,20 @@ app.get('/api/requests', async (req, res) => {
         const safeRequests = requests.map(item => {
             const doc = item.toObject();
 
-            // 1. Completely hide contact details (targeting all possible field names)
+            // 1. Nuke Contact Info
             doc.userEmail = "🔒 Hidden";
             doc.mobile = "🔒 Hidden";
-            if (doc.phone) doc.phone = "🔒 Hidden";
+            doc.phone = "🔒 Hidden";
 
-            // 2. Hide Tracking ID
+            // 2. Nuke Tracking ID
             doc.trackerId = "🔒 Hidden";
 
-            // 3. Completely hide the location/address (targeting all possible field names)
+            // 3. Nuke ALL Location Data
             doc.address = "🔒 Location hidden until claimed";
             doc.location = "🔒 Location hidden until claimed";
-            doc.city = "Hidden";
-            doc.state = "Hidden";
+            doc.city = "";
+            doc.state = "";
             doc.pincode = "";
-
-            // 4. Clear the note 
             doc.note = "";
 
             return doc;
