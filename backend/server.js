@@ -267,11 +267,6 @@ const transporter = {
     }
 };
 
-transporter.verify((error, success) => {
-    if (error) console.error("❌ Email setup error:", error);
-    else console.log("📧 Email Server is ready to send OTPs!");
-});
-
 // --- USER REQUEST ROUTES ---
 
 app.post('/api/requests', async (req, res) => {
