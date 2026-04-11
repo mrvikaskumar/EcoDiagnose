@@ -313,22 +313,22 @@ app.get('/api/requests', async (req, res) => {
         const safeRequests = requests.map(item => {
             const doc = item.toObject();
 
-            // 1. Completely hide contact details
+            // 1. Completely hide contact details (targeting all possible field names)
             doc.userEmail = "🔒 Hidden";
             doc.mobile = "🔒 Hidden";
+            if (doc.phone) doc.phone = "🔒 Hidden";
 
-            // 2. Hide Tracking ID so no one can guess or hijack the request
+            // 2. Hide Tracking ID
             doc.trackerId = "🔒 Hidden";
 
-            // 3. Completely hide the location/address for maximum safety
-            doc.address = "🔒 Location details hidden until claimed";
-
-            // Just in case your frontend uses 'city' or 'state' independently, hide them too
+            // 3. Completely hide the location/address (targeting all possible field names)
+            doc.address = "🔒 Location hidden until claimed";
+            doc.location = "🔒 Location hidden until claimed";
             doc.city = "Hidden";
             doc.state = "Hidden";
             doc.pincode = "";
 
-            // 4. Clear the note (users often type phone numbers here by mistake!)
+            // 4. Clear the note 
             doc.note = "";
 
             return doc;
