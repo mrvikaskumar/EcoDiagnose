@@ -308,33 +308,32 @@ app.post('/api/requests', async (req, res) => {
 
 app.get('/api/requests', async (req, res) => {
     try {
-        // 1. Fetch all pending requests from MongoDB (The real, raw data)
         const requests = await Request.find({ status: 'Pending' }).sort({ createdAt: -1 });
 
-        // 2. The "Masking" Loop: Modify data ONLY for the response. Database stays untouched!
         const safeRequests = requests.map(item => {
-            const doc = item.toObject(); // Convert Mongoose document to plain JS object
+            const doc = item.toObject();
 
-            // A. Mask the contact details (Prevents React from breaking or showing 'undefined')
-            doc.userEmail = "🔒 Hidden until claimed";
+            // 1. Completely hide contact details
+            doc.userEmail = "🔒 Hidden";
             doc.mobile = "🔒 Hidden";
 
-            // B. Clean up the address. Show only City, State, and Pincode if they exist in your DB.
-            if (doc.city && doc.state) {
-                doc.address = `${doc.city}, ${doc.state} - ${doc.pincode || ''}`;
-            } else {
-                // Fallback for your older requests that might just have one giant address string
-                doc.address = "🔒 Full address hidden until claimed";
-            }
+            // 2. Hide Tracking ID so no one can guess or hijack the request
+            doc.trackerId = "🔒 Hidden";
 
-            // C. Clear any extra notes where users might have accidentally typed their phone numbers
+            // 3. Completely hide the location/address for maximum safety
+            doc.address = "🔒 Location details hidden until claimed";
+
+            // Just in case your frontend uses 'city' or 'state' independently, hide them too
+            doc.city = "Hidden";
+            doc.state = "Hidden";
+            doc.pincode = "";
+
+            // 4. Clear the note (users often type phone numbers here by mistake!)
             doc.note = "";
 
-            // Notice we leave doc.userName completely untouched!
             return doc;
         });
 
-        // 3. Send the masked data to the frontend
         res.status(200).json(safeRequests);
     } catch (error) {
         console.error("Error fetching requests:", error);
