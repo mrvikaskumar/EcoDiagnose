@@ -308,29 +308,34 @@ app.post('/api/requests', async (req, res) => {
 
 app.get('/api/requests', async (req, res) => {
     try {
-        // The .lean() command is the magic key. It strips Mongoose protections and returns pure JSON.
         const requests = await Request.find({ status: 'Pending' }).lean().sort({ createdAt: -1 });
 
-        const safeRequests = requests.map(doc => {
-            // 1. Hide Identity
-            doc.userName = "🔒 Anonymous User";
-            doc.userEmail = "🔒 Hidden";
+        const safeRequests = requests.map(item => {
 
-            // 2. Forcefully Overwrite Phone (Targeting all possible database names)
-            doc.mobile = "Hidden";
-            doc.phone = "Hidden";
-            doc.contact = "Hidden";
+            // 1. Target the exact variable names your frontend used
+            item.userName = "🔒 Anonymous User";
+            item.userEmail = "🔒 Hidden";
+            item.userMobile = "🔒 Hidden"; // This will finally hide the phone!
 
-            // 3. Hide Tracking ID
-            doc.trackerId = "Hidden";
+            // 2. Hide Tracking ID
+            item.trackerId = "🔒 Hidden";
 
-            // 4. Forcefully Overwrite Location (Targeting all possible database names)
-            doc.address = "🔒 Location hidden until claimed";
-            doc.location = "🔒 Location hidden until claimed";
-            doc.city = "Hidden";
-            doc.state = "Hidden";
+            // 3. Hide the location, but SAVE the note
+            if (item.userAddress) {
+                // Your frontend combines them like: "Address... - Pincode. Note: The Note"
+                // We split the string at ". Note: "
+                const noteParts = item.userAddress.split('. Note: ');
 
-            return doc;
+                if (noteParts.length > 1) {
+                    // If a note exists, keep the note but replace the address
+                    item.userAddress = "🔒 Location hidden until claimed. Note: " + noteParts[1];
+                } else {
+                    // If there is no note, just hide the whole thing
+                    item.userAddress = "🔒 Location hidden until claimed";
+                }
+            }
+
+            return item;
         });
 
         res.status(200).json(safeRequests);
