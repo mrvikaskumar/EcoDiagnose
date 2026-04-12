@@ -312,26 +312,35 @@ app.get('/api/requests', async (req, res) => {
 
         const safeRequests = requests.map(item => {
 
-            // 1. Target the exact variable names your frontend used
+            // 1. Hide Identity and Phone securely
             item.userName = "🔒 Anonymous User";
             item.userEmail = "🔒 Hidden";
-            item.userMobile = "🔒 Hidden"; // This will finally hide the phone!
-
-            // 2. Hide Tracking ID
+            item.userMobile = "🔒 Hidden";
             item.trackerId = "🔒 Hidden";
 
-            // 3. Hide the location, but SAVE the note
+            // 2. Safely extract City, State, Pincode, and the Note
             if (item.userAddress) {
-                // Your frontend combines them like: "Address... - Pincode. Note: The Note"
-                // We split the string at ". Note: "
-                const noteParts = item.userAddress.split('. Note: ');
+                // First, separate the Address from the Note
+                const parts = item.userAddress.split('. Note: ');
+                const addressString = parts[0];
 
-                if (noteParts.length > 1) {
-                    // If a note exists, keep the note but replace the address
-                    item.userAddress = "🔒 Location hidden until claimed. Note: " + noteParts[1];
+                let noteString = "";
+                if (parts.length > 1) {
+                    noteString = ". Note: " + parts[1]; // Keep the note safe!
+                }
+
+                // Next, grab just the City, State, and Pincode
+                // Because your frontend puts commas between them, we split by comma
+                const locationPieces = addressString.split(', ');
+
+                if (locationPieces.length >= 2) {
+                    const stateAndPin = locationPieces.pop(); // Grabs "Maharashtra - 400001"
+                    const city = locationPieces.pop();        // Grabs "Mumbai"
+
+                    // Put it back together without the street address!
+                    item.userAddress = `${city}, ${stateAndPin}${noteString}`;
                 } else {
-                    // If there is no note, just hide the whole thing
-                    item.userAddress = "🔒 Location hidden until claimed";
+                    item.userAddress = "🔒 Exact street hidden" + noteString;
                 }
             }
 
