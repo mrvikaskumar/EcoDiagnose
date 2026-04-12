@@ -313,20 +313,23 @@ app.get('/api/requests', async (req, res) => {
         const safeRequests = requests.map(item => {
             const doc = item.toObject();
 
-            // 1. Nuke Contact Info
+            // 1. Completely hide the user's identity
+            doc.userName = "🔒 Anonymous User";
             doc.userEmail = "🔒 Hidden";
             doc.mobile = "🔒 Hidden";
-            doc.phone = "🔒 Hidden";
+            if (doc.phone) doc.phone = "🔒 Hidden";
 
-            // 2. Nuke Tracking ID
+            // 2. Hide Tracking ID
             doc.trackerId = "🔒 Hidden";
 
-            // 3. Nuke ALL Location Data
+            // 3. Completely hide all location data
             doc.address = "🔒 Location hidden until claimed";
-            doc.location = "🔒 Location hidden until claimed";
-            doc.city = "";
-            doc.state = "";
+            if (doc.location) doc.location = "🔒 Location hidden until claimed";
+            doc.city = "Hidden";
+            doc.state = "Hidden";
             doc.pincode = "";
+
+            // 4. Clear any extra notes
             doc.note = "";
 
             return doc;
