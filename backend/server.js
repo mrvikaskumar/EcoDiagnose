@@ -308,29 +308,27 @@ app.post('/api/requests', async (req, res) => {
 
 app.get('/api/requests', async (req, res) => {
     try {
-        const requests = await Request.find({ status: 'Pending' }).sort({ createdAt: -1 });
+        // The .lean() command is the magic key. It strips Mongoose protections and returns pure JSON.
+        const requests = await Request.find({ status: 'Pending' }).lean().sort({ createdAt: -1 });
 
-        const safeRequests = requests.map(item => {
-            const doc = item.toObject();
-
-            // 1. Completely hide the user's identity
+        const safeRequests = requests.map(doc => {
+            // 1. Hide Identity
             doc.userName = "🔒 Anonymous User";
             doc.userEmail = "🔒 Hidden";
-            doc.mobile = "🔒 Hidden";
-            if (doc.phone) doc.phone = "🔒 Hidden";
 
-            // 2. Hide Tracking ID
-            doc.trackerId = "🔒 Hidden";
+            // 2. Forcefully Overwrite Phone (Targeting all possible database names)
+            doc.mobile = "Hidden";
+            doc.phone = "Hidden";
+            doc.contact = "Hidden";
 
-            // 3. Completely hide all location data
+            // 3. Hide Tracking ID
+            doc.trackerId = "Hidden";
+
+            // 4. Forcefully Overwrite Location (Targeting all possible database names)
             doc.address = "🔒 Location hidden until claimed";
-            if (doc.location) doc.location = "🔒 Location hidden until claimed";
+            doc.location = "🔒 Location hidden until claimed";
             doc.city = "Hidden";
             doc.state = "Hidden";
-            doc.pincode = "";
-
-            // 4. Clear any extra notes
-            doc.note = "";
 
             return doc;
         });
