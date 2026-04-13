@@ -7,14 +7,23 @@ import logging
 import os
 from ultralytics import YOLO
 
-# 1. Initialize Flask and CORS
+# --- NEW: MEMORY DIET IMPORTS ---
+import gc      
+import torch   
+
+# --- STRICT RAM DIET SETUP ---
+# 1. Force PyTorch to use exactly 1 CPU thread. 
+# This stops it from trying to grab 100% of the server's RAM for parallel processing.
+torch.set_num_threads(1)
+
+# Initialize Flask and CORS
 app = Flask(__name__)
 CORS(app)
 
 # Suppress YOLO's default printing
 logging.getLogger("ultralytics").setLevel(logging.ERROR)
 
-# 2. Load Models ONCE (at the top so they stay in memory)
+# Load Models ONCE (at the top so they stay in memory)
 print("Loading AI Models...")
 try:
     model_1 = YOLO('ewaste_detection_model.pt') 
@@ -48,7 +57,9 @@ def predict():
             return jsonify({"error": "Invalid image format"}), 400
 
         # D. STAGE 1: Detection
-        results_stage_1 = model_1(img, conf=0.25, verbose=False)
+        # NEW: Added imgsz=320. This forces YOLO to downscale the image internally, 
+        # cutting the memory required for the math matrix by almost 75%!
+        results_stage_1 = model_1(img, conf=0.25, verbose=False, imgsz=320)
         
         if len(results_stage_1[0].boxes) > 0:
             box = results_stage_1[0].boxes[0]
@@ -64,7 +75,8 @@ def predict():
                 cropped_phone = img[y1:y2, x1:x2]
                 
                 if cropped_phone.size != 0:
-                    results_stage_2 = model_2(cropped_phone, conf=0.25, verbose=False)
+                    # NEW: Added imgsz=320 here as well to protect memory on the second scan
+                    results_stage_2 = model_2(cropped_phone, conf=0.25, verbose=False, imgsz=320)
                     
                     if len(results_stage_2[0].boxes) > 0:
                         damage_box = results_stage_2[0].boxes[0]
@@ -98,8 +110,18 @@ def predict():
             "viability": f"CRASH REASON: {str(e)}",
             "score": 0
         }), 500
+        
+    finally:
+        # --- NEW: AGGRESSIVE GARBAGE COLLECTION ---
+        # This forces Python to immediately delete the heavy image arrays and 
+        # empty the RAM back down to a safe level before the next user clicks scan.
+        try:
+            del img, cropped_phone, results_stage_1, results_stage_2
+        except NameError:
+            pass # Ignores errors if variables weren't created yet
+        gc.collect()
 
-# 3. Start the Flask Server
+# Start the Flask Server
 if __name__ == "__main__":
     # Render assigns a port via environment variable
     port = int(os.environ.get("PORT", 5000))
