@@ -154,15 +154,16 @@ app.post('/api/partner/login', async (req, res) => {
         // --- NEW: ADMIN OVERRIDE ---
         if (email === ADMIN_EMAIL) {
             if (!partner) {
-                // If Admin doesn't exist in DB yet, create a hidden admin record to hold the OTP
+                // If Admin doesn't exist, create a hidden record that SATISFIES Mongoose validation
                 partner = new Partner({
                     businessName: "System Admin",
                     email: ADMIN_EMAIL,
-                    mobile: "0000000000",
+                    mobile: "9999999999",         // Must be 10 digits
                     address: "Admin HQ",
                     city: "System",
                     state: "System",
-                    pincode: "000000",
+                    pincode: "111111",            // Cannot start with 0
+                    gstNumber: "22AAAAA0000A1Z5", // Dummy GST to pass 'required' validation
                     isVerified: true
                 });
             }
