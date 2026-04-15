@@ -5,36 +5,36 @@ const PartnerLogin = () => {
     const navigate = useNavigate();
     const [businessName, setBusinessName] = useState('');
     const [email, setEmail] = useState('');
+    const [isSending, setIsSending] = useState(false);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setIsSending(true);
 
         const ADMIN_EMAIL = "vikaschouhan77122@gmail.com";
 
-        // THE ADMIN INTERCEPTOR: Jump straight to OTP screen
-        if (email === ADMIN_EMAIL) {
-            navigate('/partner/verify-otp', { state: { email, flow: 'admin' } });
-            return;
-        }
-
-        // ... Normal Partner Login Logic ...
         try {
+            // Send request to backend so it triggers the email for BOTH partners and the Admin
             const response = await fetch('https://ecodiagnose-backend.onrender.com/api/partner/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email })
             });
-            // ... (keep the rest of your existing fetch code here) ...
+
             const data = await response.json();
 
             if (response.ok) {
-                navigate('/partner/verify-otp', { state: { email, flow: 'login' } });
+                // If it's the admin, pass the 'admin' flow so your Verify OTP page knows where to redirect!
+                const flowType = email === ADMIN_EMAIL ? 'admin' : 'login';
+                navigate('/partner/verify-otp', { state: { email, flow: flowType } });
             } else {
                 alert(data.error || "Login failed.");
             }
         } catch (error) {
             console.error("Error:", error);
             alert("Could not connect to the server.");
+        } finally {
+            setIsSending(false);
         }
     };
 
@@ -43,7 +43,7 @@ const PartnerLogin = () => {
 
             <nav className="flex justify-between items-center px-6 py-4 bg-white shadow-sm mb-8 relative z-10">
                 <div onClick={() => navigate('/')} className="text-2xl font-extrabold text-green-600 tracking-tight cursor-pointer flex items-center gap-2">
-                    <span className="text-3xl">🌱</span> Eco<span className="text-gray-800">Diagnose</span> <span className="text-sm bg-gray-800 text-white px-2 py-0.5 rounded ml-2">PARTNER LOGIN</span>
+                    <span className="text-3xl">🌱</span> Eco<span className="text-gray-800">Diagnose</span> <span className="text-sm bg-gray-800 text-white px-2 py-0.5 rounded ml-2">PORTAL LOGIN</span>
                 </div>
                 <button onClick={() => navigate('/partner/portal')} className="text-gray-500 hover:text-gray-800 font-medium transition">
                     ← Back
@@ -69,8 +69,8 @@ const PartnerLogin = () => {
                         </div>
                     </div>
 
-                    <button type="submit" className="w-full bg-green-600 text-white py-3 rounded-lg font-bold text-lg hover:bg-green-700 transition transform hover:-translate-y-0.5 shadow-md flex items-center justify-center gap-2">
-                        <span>✉️</span> Send Verification OTP
+                    <button type="submit" disabled={isSending} className={`w-full bg-green-600 text-white py-3 rounded-lg font-bold text-lg hover:bg-green-700 transition transform hover:-translate-y-0.5 shadow-md flex items-center justify-center gap-2 ${isSending ? 'opacity-70 cursor-not-allowed' : ''}`}>
+                        <span>✉️</span> {isSending ? 'Sending OTP...' : 'Send Verification OTP'}
                     </button>
 
                     <p className="text-center text-sm text-gray-500 mt-6">

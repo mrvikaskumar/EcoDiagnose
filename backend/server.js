@@ -147,14 +147,33 @@ app.post('/api/partner/register', async (req, res) => {
 app.post('/api/partner/login', async (req, res) => {
     try {
         const { email } = req.body;
-        const partner = await Partner.findOne({ email });
-        if (!partner) {
-            return res.status(404).json({ error: "Partner not found. Please register." });
-        }
+        const ADMIN_EMAIL = "vikaschouhan77122@gmail.com";
 
-        // NEW: Security check to prevent blocked partners from logging in
-        if (partner.isBlocked) {
-            return res.status(403).json({ error: "Your account has been blocked by an Administrator due to a policy violation." });
+        let partner = await Partner.findOne({ email });
+
+        // --- NEW: ADMIN OVERRIDE ---
+        if (email === ADMIN_EMAIL) {
+            if (!partner) {
+                // If Admin doesn't exist in DB yet, create a hidden admin record to hold the OTP
+                partner = new Partner({
+                    businessName: "System Admin",
+                    email: ADMIN_EMAIL,
+                    mobile: "0000000000",
+                    address: "Admin HQ",
+                    city: "System",
+                    state: "System",
+                    pincode: "000000",
+                    isVerified: true
+                });
+            }
+        } else {
+            // Normal Partner checks
+            if (!partner) {
+                return res.status(404).json({ error: "Partner not found. Please register." });
+            }
+            if (partner.isBlocked) {
+                return res.status(403).json({ error: "Your account has been blocked by an Administrator due to a policy violation." });
+            }
         }
 
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -165,8 +184,8 @@ app.post('/api/partner/login', async (req, res) => {
         const mailOptions = {
             from: process.env.EMAIL_USER,
             to: email,
-            subject: 'EcoDiagnose - Partner Login OTP',
-            html: `<h3>EcoDiagnose Partner Portal</h3><p>Your login code is: <b style="font-size:24px; color:green;">${otp}</b></p>`
+            subject: email === ADMIN_EMAIL ? '🛡️ EcoDiagnose - ADMIN Secure Login OTP' : 'EcoDiagnose - Partner Login OTP',
+            html: `<h3>EcoDiagnose ${email === ADMIN_EMAIL ? 'Admin' : 'Partner'} Portal</h3><p>Your secure login code is: <b style="font-size:24px; color:green;">${otp}</b></p>`
         };
         await transporter.sendMail(mailOptions);
 
