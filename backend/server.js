@@ -19,6 +19,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+let globalAdminOTP = null;
+let globalAdminOTPExpires = null;
 
 // Middleware
 app.use(cors());
@@ -148,36 +150,28 @@ app.post('/api/partner/login', async (req, res) => {
     try {
         const { email } = req.body;
         const ADMIN_EMAIL = "vikaschouhan77122@gmail.com";
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-        let partner = await Partner.findOne({ email });
-
-        // --- NEW: ADMIN OVERRIDE ---
+        // 1. ADMIN LOGIC (Stored in Memory, NOT Database)
         if (email === ADMIN_EMAIL) {
-            if (!partner) {
-                // If Admin doesn't exist, create a hidden record that SATISFIES Mongoose validation
-                partner = new Partner({
-                    businessName: "System Admin",
-                    email: ADMIN_EMAIL,
-                    mobile: "9999999999",         // Must be 10 digits
-                    address: "Admin HQ",
-                    city: "System",
-                    state: "System",
-                    pincode: "111111",            // Cannot start with 0
-                    gstNumber: "22AAAAA0000A1Z5", // Dummy GST to pass 'required' validation
-                    isVerified: true
-                });
-            }
-        } else {
-            // Normal Partner checks
-            if (!partner) {
-                return res.status(404).json({ error: "Partner not found. Please register." });
-            }
-            if (partner.isBlocked) {
-                return res.status(403).json({ error: "Your account has been blocked by an Administrator due to a policy violation." });
-            }
+            globalAdminOTP = otp;
+            globalAdminOTPExpires = new Date(Date.now() + 10 * 60000);
+
+            const mailOptions = {
+                from: process.env.EMAIL_USER,
+                to: email,
+                subject: '🛡️ EcoDiagnose - ADMIN Secure Login OTP',
+                html: `<h3>EcoDiagnose Admin Portal</h3><p>Your secure login code is: <b style="font-size:24px; color:green;">${otp}</b></p>`
+            };
+            await transporter.sendMail(mailOptions);
+            return res.status(200).json({ message: "Admin OTP sent" });
         }
 
-        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        // 2. NORMAL PARTNER LOGIC
+        const partner = await Partner.findOne({ email });
+        if (!partner) return res.status(404).json({ error: "Partner not found. Please register." });
+        if (partner.isBlocked) return res.status(403).json({ error: "Your account has been blocked." });
+
         partner.otp = otp;
         partner.otpExpires = new Date(Date.now() + 10 * 60000);
         await partner.save();
@@ -185,12 +179,10 @@ app.post('/api/partner/login', async (req, res) => {
         const mailOptions = {
             from: process.env.EMAIL_USER,
             to: email,
-            subject: email === ADMIN_EMAIL ? '🛡️ EcoDiagnose - ADMIN Secure Login OTP' : 'EcoDiagnose - Partner Login OTP',
-            html: `<h3>EcoDiagnose ${email === ADMIN_EMAIL ? 'Admin' : 'Partner'} Portal</h3><p>Your secure login code is: <b style="font-size:24px; color:green;">${otp}</b></p>`
+            subject: 'EcoDiagnose - Partner Login OTP',
+            html: `<h3>EcoDiagnose Partner Portal</h3><p>Your login code is: <b style="font-size:24px; color:green;">${otp}</b></p>`
         };
         await transporter.sendMail(mailOptions);
-
-        console.log(`✅ Login OTP sent to ${email}`);
         res.status(200).json({ message: "OTP sent to email" });
 
     } catch (error) {
@@ -202,9 +194,20 @@ app.post('/api/partner/login', async (req, res) => {
 app.post('/api/partner/verify-otp', async (req, res) => {
     try {
         const { email, otp } = req.body;
+        const ADMIN_EMAIL = "vikaschouhan77122@gmail.com";
+
+        // 1. ADMIN VERIFICATION
+        if (email === ADMIN_EMAIL) {
+            if (globalAdminOTP !== otp) return res.status(400).json({ error: "Invalid Admin OTP" });
+            if (globalAdminOTPExpires < new Date()) return res.status(400).json({ error: "OTP has expired" });
+
+            globalAdminOTP = null; // Clear OTP after success
+            return res.status(200).json({ message: "Verification successful", isAdmin: true });
+        }
+
+        // 2. NORMAL PARTNER VERIFICATION
         const partner = await Partner.findOne({ email });
         if (!partner) return res.status(404).json({ error: "Partner not found" });
-
         if (partner.otp !== otp) return res.status(400).json({ error: "Invalid OTP" });
         if (partner.otpExpires < new Date()) return res.status(400).json({ error: "OTP has expired" });
 
@@ -213,7 +216,6 @@ app.post('/api/partner/verify-otp', async (req, res) => {
         partner.otpExpires = undefined;
         await partner.save();
 
-        console.log(`🔓 Partner ${email} successfully verified!`);
         res.status(200).json({ message: "Verification successful", partnerId: partner._id });
 
     } catch (error) {
