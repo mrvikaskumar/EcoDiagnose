@@ -7,7 +7,7 @@ const PartnerDashboard = () => {
 
     const [allRequests, setAllRequests] = useState([]);
     const [matchedRequests, setMatchedRequests] = useState([]);
-    const [historyRequests, setHistoryRequests] = useState([]); // NEW: State for history
+    const [historyRequests, setHistoryRequests] = useState([]);
     const [partnerProfile, setPartnerProfile] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -23,7 +23,6 @@ const PartnerDashboard = () => {
         "Power Supplies", "Other (Specify)"
     ];
 
-    // Extracted fetch function so we can reuse it when an item is claimed
     const fetchDashboardData = async () => {
         const partnerId = localStorage.getItem('partnerToken');
         if (!partnerId) {
@@ -32,17 +31,14 @@ const PartnerDashboard = () => {
         }
 
         try {
-            // 1. Fetch Profile
             const partnerRes = await fetch(`https://ecodiagnose-backend.onrender.com/api/partner/${partnerId}`);
             const partnerData = await partnerRes.json();
             setPartnerProfile(partnerData);
             setEditFormData(partnerData);
 
-            // 2. Fetch Pending Requests
             const requestsRes = await fetch('https://ecodiagnose-backend.onrender.com/api/requests');
             const requestsData = await requestsRes.json();
 
-            // 3. Fetch Partner's History
             const historyRes = await fetch(`https://ecodiagnose-backend.onrender.com/api/partner/${partnerId}/history`);
             const historyData = await historyRes.json();
 
@@ -77,7 +73,7 @@ const PartnerDashboard = () => {
         navigate('/');
     };
 
-    // --- CLAIM ITEM FUNCTION ---
+    // --- CLAIM ITEM ---
     const handleClaimItem = async (requestId) => {
         const isConfirmed = window.confirm("Are you sure you want to claim this item? We will notify the user immediately.");
         if (!isConfirmed) return;
@@ -92,9 +88,8 @@ const PartnerDashboard = () => {
 
             if (response.ok) {
                 alert("🎉 Item successfully claimed! The user has been notified.");
-                // Refresh the dashboard to move the item from Pending to History
                 fetchDashboardData();
-                setActiveTab('history'); // Automatically jump to the history tab
+                setActiveTab('history');
             } else {
                 const data = await response.json();
                 alert(data.error || "Failed to claim item.");
@@ -102,6 +97,52 @@ const PartnerDashboard = () => {
         } catch (error) {
             console.error("Claim error:", error);
             alert("Server error while claiming.");
+        }
+    };
+
+    // --- NEW: DEAL DONE ---
+    const handleCompleteDeal = async (requestId) => {
+        const isConfirmed = window.confirm("Mark this deal as Completed? This action cannot be undone.");
+        if (!isConfirmed) return;
+
+        try {
+            const response = await fetch(`https://ecodiagnose-backend.onrender.com/api/requests/${requestId}/complete`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            if (response.ok) {
+                alert("✅ Deal marked as completed!");
+                fetchDashboardData();
+            } else {
+                const data = await response.json();
+                alert(data.error || "Failed to complete deal.");
+            }
+        } catch (error) {
+            console.error("Complete deal error:", error);
+            alert("Server error while completing deal.");
+        }
+    };
+
+    // --- NEW: UNCLAIM ITEM ---
+    const handleUnclaimItem = async (requestId) => {
+        const isConfirmed = window.confirm("Are you sure you want to UNCLAIM this item? It will be returned to the public marketplace.");
+        if (!isConfirmed) return;
+
+        try {
+            const response = await fetch(`https://ecodiagnose-backend.onrender.com/api/requests/${requestId}/unclaim`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            if (response.ok) {
+                alert("🔙 Item unclaimed successfully. It is back on the public board.");
+                fetchDashboardData();
+            } else {
+                const data = await response.json();
+                alert(data.error || "Failed to unclaim item.");
+            }
+        } catch (error) {
+            console.error("Unclaim error:", error);
+            alert("Server error while unclaiming.");
         }
     };
 
@@ -145,7 +186,7 @@ const PartnerDashboard = () => {
     const RequestCard = ({ req, isHistory = false }) => (
         <div className={`border rounded-xl p-5 hover:shadow-lg transition flex flex-col justify-between bg-white relative overflow-hidden ${isHistory ? 'border-green-200' : 'border-gray-200'}`}>
 
-            <div className={`absolute top-0 left-0 w-full h-1 ${isHistory ? 'bg-green-600' : (req.score > 50 ? 'bg-red-500' : 'bg-green-500')}`}></div>
+            <div className={`absolute top-0 left-0 w-full h-1 ${isHistory ? (req.status === 'Completed' ? 'bg-blue-600' : 'bg-green-600') : (req.score > 50 ? 'bg-red-500' : 'bg-green-500')}`}></div>
 
             <div>
                 <div className="flex justify-between items-start mb-3 mt-1">
@@ -172,7 +213,9 @@ const PartnerDashboard = () => {
                 </p>
             </div>
 
+            {/* ACTION BUTTONS LOGIC */}
             {!isHistory ? (
+                // Public Feed Button
                 <button
                     onClick={() => handleClaimItem(req._id)}
                     className="mt-4 w-full bg-gray-900 text-white py-2.5 rounded-lg font-bold hover:bg-green-600 transition shadow-sm flex justify-center items-center gap-2"
@@ -180,9 +223,27 @@ const PartnerDashboard = () => {
                     <span>🤝</span> Claim Item & Contact User
                 </button>
             ) : (
-                <div className="mt-4 w-full bg-green-50 border border-green-200 text-green-700 py-2.5 rounded-lg font-bold text-center flex justify-center items-center gap-2">
-                    <span>✅</span> Successfully Claimed
-                </div>
+                // History Feed Buttons
+                req.status === 'Completed' ? (
+                    <div className="mt-4 w-full bg-blue-50 border border-blue-200 text-blue-700 py-2.5 rounded-lg font-bold text-center flex justify-center items-center gap-2">
+                        <span>🌟</span> Deal Completed
+                    </div>
+                ) : (
+                    <div className="mt-4 flex gap-2">
+                        <button
+                            onClick={() => handleCompleteDeal(req._id)}
+                            className="w-1/2 bg-green-600 text-white py-2 rounded-lg font-bold hover:bg-green-700 transition text-sm flex justify-center items-center gap-1 shadow-sm"
+                        >
+                            <span>✅</span> Deal Done
+                        </button>
+                        <button
+                            onClick={() => handleUnclaimItem(req._id)}
+                            className="w-1/2 bg-red-50 text-red-600 py-2 rounded-lg font-bold hover:bg-red-100 transition text-sm flex justify-center items-center gap-1 border border-red-200"
+                        >
+                            <span>🔙</span> Unclaim
+                        </button>
+                    </div>
+                )
             )}
         </div>
     );
@@ -238,7 +299,7 @@ const PartnerDashboard = () => {
                         <div className="animate-fade-in">
                             <div className="flex justify-between items-center mb-6">
                                 <h2 className="text-xl font-bold text-gray-800">Your Claimed Items</h2>
-                                <span className="bg-green-100 text-green-800 text-xs font-bold px-3 py-1 rounded-full">Completed</span>
+                                <span className="bg-green-100 text-green-800 text-xs font-bold px-3 py-1 rounded-full">Completed & Pending Deals</span>
                             </div>
 
                             {loading ? <p>Loading...</p> : historyRequests.length === 0 ? (

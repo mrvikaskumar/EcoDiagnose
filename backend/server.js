@@ -435,6 +435,49 @@ app.post('/api/requests/:id/claim', async (req, res) => {
     }
 });
 
+// --- NEW: DEAL DONE ROUTE ---
+app.post('/api/requests/:id/complete', async (req, res) => {
+    try {
+        const request = await Request.findById(req.params.id);
+        if (!request) return res.status(404).json({ error: "Request not found" });
+
+        if (request.status === 'Completed') {
+            return res.status(400).json({ error: "Deal is already marked as completed." });
+        }
+
+        request.status = 'Completed';
+        await request.save();
+
+        console.log(`🤝 Deal completed for request: ${request.trackerId}`);
+        res.status(200).json({ success: true, message: "Deal marked as completed!" });
+    } catch (error) {
+        console.error("Error completing request:", error);
+        res.status(500).json({ error: "Server error while completing the deal." });
+    }
+});
+
+// --- NEW: UNCLAIM ROUTE ---
+app.post('/api/requests/:id/unclaim', async (req, res) => {
+    try {
+        const request = await Request.findById(req.params.id);
+        if (!request) return res.status(404).json({ error: "Request not found" });
+
+        if (request.status === 'Completed') {
+            return res.status(400).json({ error: "Cannot unclaim a completed deal." });
+        }
+
+        request.status = 'Pending';
+        request.claimedBy = undefined; // This completely removes the partner's tie to the item
+        await request.save();
+
+        console.log(`🔙 Request unclaimed, back to public board: ${request.trackerId}`);
+        res.status(200).json({ success: true, message: "Item unclaimed and returned to public board." });
+    } catch (error) {
+        console.error("Error unclaiming request:", error);
+        res.status(500).json({ error: "Server error while unclaiming the item." });
+    }
+});
+
 app.get('/api/partner/:partnerId/history', async (req, res) => {
     try {
         const history = await Request.find({ claimedBy: req.params.partnerId }).sort({ updatedAt: -1 });
