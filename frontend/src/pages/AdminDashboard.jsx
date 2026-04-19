@@ -10,7 +10,7 @@ const AdminDashboard = () => {
     const [feedbacks, setFeedbacks] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    const [stats, setStats] = useState({ totalReq: 0, claimedReq: 0, pendingReq: 0, totalPartners: 0, totalFeedback: 0, staleReq: 0 });
+    const [stats, setStats] = useState({ totalReq: 0, claimedReq: 0, completedReq: 0, pendingReq: 0, totalPartners: 0, totalFeedback: 0, staleReq: 0 });
 
     // NEW: State for the Warning Email Modal
     const [warningModal, setWarningModal] = useState({
@@ -37,7 +37,11 @@ const AdminDashboard = () => {
                 setPartners(partData);
                 setFeedbacks(feedData);
 
+                // --- UPDATED STATS CALCULATION ---
+                const completed = reqData.filter(r => r.status === 'Completed').length;
                 const claimed = reqData.filter(r => r.status === 'Claimed').length;
+                const pending = reqData.filter(r => r.status === 'Pending').length;
+
                 const thirtyDaysAgo = new Date();
                 thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
                 const staleCount = reqData.filter(r => new Date(r.createdAt) < thirtyDaysAgo).length;
@@ -45,7 +49,8 @@ const AdminDashboard = () => {
                 setStats({
                     totalReq: reqData.length,
                     claimedReq: claimed,
-                    pendingReq: reqData.length - claimed,
+                    completedReq: completed,
+                    pendingReq: pending,
                     totalPartners: partData.length,
                     totalFeedback: feedData.length,
                     staleReq: staleCount
@@ -158,6 +163,13 @@ const AdminDashboard = () => {
 
     const renderStars = (rating) => "⭐".repeat(rating);
 
+    // Status Badge Helper for Tables
+    const getStatusBadge = (status) => {
+        if (status === 'Completed') return 'bg-blue-100 text-blue-800';
+        if (status === 'Claimed') return 'bg-green-100 text-green-800';
+        return 'bg-yellow-100 text-yellow-800';
+    };
+
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     const recentRequests = requests.filter(req => new Date(req.createdAt) >= thirtyDaysAgo);
@@ -239,17 +251,22 @@ const AdminDashboard = () => {
                         {activeTab === 'overview' && (
                             <div className="animate-fade-in">
                                 <h2 className="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">System Analytics</h2>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                                     <div className="bg-linear-to-br from-indigo-500 to-indigo-700 p-6 rounded-xl text-white shadow-md">
                                         <p className="text-indigo-100 font-medium mb-1">Total Requests</p>
                                         <h3 className="text-3xl font-black">{stats.totalReq}</h3>
                                     </div>
+                                    {/* NEW COMPLETED DEALS CARD */}
+                                    <div className="bg-linear-to-br from-blue-500 to-blue-700 p-6 rounded-xl text-white shadow-md">
+                                        <p className="text-blue-100 font-medium mb-1">Deals Completed</p>
+                                        <h3 className="text-3xl font-black">{stats.completedReq}</h3>
+                                    </div>
                                     <div className="bg-linear-to-br from-emerald-500 to-emerald-700 p-6 rounded-xl text-white shadow-md">
-                                        <p className="text-emerald-100 font-medium mb-1">Claimed</p>
+                                        <p className="text-emerald-100 font-medium mb-1">Claimed (In Progress)</p>
                                         <h3 className="text-3xl font-black">{stats.claimedReq}</h3>
                                     </div>
                                     <div className="bg-linear-to-br from-amber-500 to-amber-700 p-6 rounded-xl text-white shadow-md">
-                                        <p className="text-amber-100 font-medium mb-1">Pending</p>
+                                        <p className="text-amber-100 font-medium mb-1">Pending (Public)</p>
                                         <h3 className="text-3xl font-black">{stats.pendingReq}</h3>
                                     </div>
                                     <div className="bg-linear-to-br from-red-500 to-red-700 p-6 rounded-xl text-white shadow-md">
@@ -298,14 +315,14 @@ const AdminDashboard = () => {
                                                         <p className="text-xs text-gray-500">{req.userEmail}</p>
                                                     </td>
                                                     <td className="p-4">
-                                                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${req.status === 'Claimed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                                                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${getStatusBadge(req.status)}`}>
                                                             {req.status}
                                                         </span>
                                                     </td>
                                                     <td className="p-4">
-                                                        {req.status === 'Claimed' && req.claimedBy ? (
+                                                        {(req.status === 'Claimed' || req.status === 'Completed') && req.claimedBy ? (
                                                             <div>
-                                                                <p className="font-bold text-green-700">{req.claimedBy.businessName}</p>
+                                                                <p className="font-bold text-gray-800">{req.claimedBy.businessName}</p>
                                                                 <p className="text-xs text-gray-500">{req.claimedBy.email}</p>
                                                             </div>
                                                         ) : <span className="text-gray-400 italic">Unclaimed</span>}
@@ -355,7 +372,7 @@ const AdminDashboard = () => {
                                                         <p className="text-xs text-gray-500">{Math.floor((new Date() - new Date(req.createdAt)) / (1000 * 60 * 60 * 24))} days ago</p>
                                                     </td>
                                                     <td className="p-4">
-                                                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${req.status === 'Claimed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                                                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${getStatusBadge(req.status)}`}>
                                                             {req.status}
                                                         </span>
                                                     </td>
@@ -466,7 +483,7 @@ const AdminDashboard = () => {
                                                     </div>
                                                 )}
 
-                                                {/* NEW: Bottom row with Date and Delete Button */}
+                                                {/* Bottom row with Date and Delete Button */}
                                                 <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-200/50">
                                                     <p className="text-xs text-gray-400">
                                                         Submitted on: {new Date(fb.createdAt).toLocaleDateString()}

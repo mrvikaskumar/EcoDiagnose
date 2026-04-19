@@ -395,16 +395,24 @@ app.get('/api/requests/track/:trackerId', async (req, res) => {
 app.post('/api/requests/:id/claim', async (req, res) => {
     try {
         const { partnerId } = req.body;
+
+        // 1. Check if the request exists and is pending
         const request = await Request.findById(req.params.id);
         if (!request) return res.status(404).json({ error: "Request not found" });
         if (request.status !== 'Pending') return res.status(400).json({ error: "Item already claimed" });
 
+        // 2. NEW SAFETY CHECK: Ensure the partner actually exists in the database
+        const partner = await Partner.findById(partnerId);
+        if (!partner) {
+            return res.status(404).json({ error: "Partner account not found. Please log out and log in again." });
+        }
+
+        // 3. Update the request
         request.status = 'Claimed';
         request.claimedBy = partnerId;
         await request.save();
 
-        const partner = await Partner.findById(partnerId);
-
+        // 4. Send the email securely
         const mailOptions = {
             from: process.env.EMAIL_USER,
             to: request.userEmail,
